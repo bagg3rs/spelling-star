@@ -207,7 +207,7 @@
 
   .practice-canvas {
     width: 100%;
-    height: 300px;
+    height: 180px;
     background: var(--card);
     border: 3px solid #7c3aed;
     border-radius: 16px;
@@ -222,52 +222,56 @@
     margin: 10px 0;
   }
 
-  /* Score display */
+  /* Score display — simple and encouraging */
   .score-display {
     text-align: center;
-    margin: 15px 0;
-    min-height: 100px;
+    margin: 10px 0;
+    min-height: 80px;
   }
-  .score-ring {
-    position: relative;
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 10px;
-  }
-  .score-ring canvas {
-    width: 120px;
-    height: 120px;
-  }
-  .score-ring .score-num {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 2rem;
-    font-weight: 900;
+  .score-emoji {
+    font-size: 3.5rem;
+    margin: 5px 0;
+    animation: popIn 0.3s ease-out;
   }
   .score-msg {
     font-size: 1.2rem;
     font-weight: 700;
-    margin-top: 8px;
-  }
-  .score-detail {
-    font-size: 0.9rem;
-    color: #888;
     margin-top: 4px;
   }
-  .score-bar {
-    width: 100%;
-    height: 12px;
-    background: #333;
-    border-radius: 6px;
-    margin: 8px 0;
-    overflow: hidden;
+  @keyframes popIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
   }
-  .score-bar-fill {
-    height: 100%;
-    border-radius: 6px;
-    transition: width 0.8s ease-out;
+
+  /* Letter navigation arrows */
+  .letter-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin: 10px 0;
+  }
+  .nav-arrow {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #333;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .nav-arrow:active { background: #555; transform: scale(0.95); }
+  .current-letter-display {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--text);
+    min-width: 80px;
+    text-align: center;
   }
 
   /* Pen colour picker */
@@ -420,7 +424,11 @@
 
 <!-- LETTER DRAW SCREEN -->
 <div id="letter-draw-screen" class="screen">
-  <h1 id="practice-letter-title"></h1>
+  <div class="letter-nav">
+    <button class="nav-arrow" onclick="prevLetter()">◀</button>
+    <div class="current-letter-display" id="nav-letter-display"></div>
+    <button class="nav-arrow" onclick="nextLetter()">▶</button>
+  </div>
   <div class="guide-text" id="practice-guide"></div>
   <div class="canvas-container" style="max-width:460px; width:100%;">
     <canvas class="practice-canvas" id="practice-canvas"></canvas>
@@ -429,14 +437,11 @@
   <div class="pen-colours" id="practice-pen-colours"></div>
   <div class="canvas-tools">
     <button onclick="clearPracticeCanvas()">🗑️ Clear</button>
-    <button onclick="showGuide()">👁️ Show Guide</button>
     <button onclick="playStrokeAnimation()" id="watch-btn">▶️ Watch</button>
-    <button class="btn success" style="padding:10px 20px; margin:0; min-width:auto; font-size:1rem;" onclick="scoreDrawing()">✅ Check!</button>
-    <button onclick="nextPracticeLetter()">Next →</button>
   </div>
   <div class="score-display" id="score-display"></div>
-  <div id="practice-count" style="margin-top:10px; color:var(--gold);"></div>
-  <button class="btn secondary" style="margin-top:15px;" onclick="showScreen('letter-screen')">← Back to Letters</button>
+  <div id="practice-count" style="color:var(--gold); font-size: 0.9rem;"></div>
+  <button class="btn secondary" style="margin-top:10px;" onclick="showScreen('letter-screen')">← All Letters</button>
 </div>
 
 <!-- RESULTS SCREEN -->
@@ -624,6 +629,11 @@
       e.preventDefault();
       state.drawing = false;
       canvas.classList.remove('active');
+      // Auto-score after drawing stops (letter practice only)
+      if (canvasId === 'practice-canvas' && !animationRunning) {
+        clearTimeout(autoScoreTimer);
+        autoScoreTimer = setTimeout(() => scoreDrawing(), 1200);
+      }
     }
 
     canvas.addEventListener('mousedown', startDraw);
@@ -840,7 +850,7 @@
     currentPracticeLetter = letter;
     practiceCount = 0;
     showScreen('letter-draw-screen');
-    document.getElementById('practice-letter-title').textContent = `✍️ Letter: ${letter.toUpperCase()} ${letter}`;
+    document.getElementById('nav-letter-display').textContent = `${letter.toUpperCase()} ${letter}`;
     
     const guides = {
       a: 'Start at 2 o\'clock → anticlockwise circle → up → straight down',
@@ -873,11 +883,24 @@
     
     document.getElementById('practice-guide').textContent = guides[letter] || `Trace the letter ${letter}`;
     document.getElementById('practice-count').textContent = '';
+    document.getElementById('score-display').innerHTML = '';
     
     setTimeout(() => {
       initCanvas('practice-canvas');
       showGuide();
     }, 50);
+  }
+
+  function prevLetter() {
+    const idx = allLetters.indexOf(currentPracticeLetter);
+    const prev = allLetters[(idx - 1 + 26) % 26];
+    startLetterPractice(prev);
+  }
+
+  function nextLetter() {
+    const idx = allLetters.indexOf(currentPracticeLetter);
+    const next = allLetters[(idx + 1) % 26];
+    startLetterPractice(next);
   }
 
   // Letter sizing: use a consistent size that a finger can trace comfortably
@@ -922,6 +945,8 @@
   };
 
   let animationRunning = false;
+  let autoScoreTimer = null;
+  const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
   function getLetterLayout(rect, dpr) {
     // Writing lines: top, middle (x-height), baseline, descender
@@ -1182,6 +1207,7 @@
   }
 
   function clearPracticeCanvas() {
+    clearTimeout(autoScoreTimer);
     const canvas = document.getElementById('practice-canvas');
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
@@ -1268,15 +1294,16 @@
     const coverage = refCount > 0 ? Math.min(overlapCount / refCount, 1) : 0;   // how much of the letter did you trace
     const precision = userCount > 0 ? overlapCount / userCount : 0;              // how much stayed on the letter
     
-    // Weighted score: coverage 60%, precision 40% (reward tracing the whole letter)
-    // Be generous — this is for a 6-year-old
-    let score = Math.round((coverage * 0.6 + precision * 0.4) * 100);
+    // Weighted score — be generous, this is for a 6-year-old
+    // Precision matters more than coverage (reward staying on the letter)
+    let score = Math.round((coverage * 0.4 + precision * 0.6) * 100);
     
-    // Boost: if coverage > 50% and precision > 40%, add a bonus
-    if (coverage > 0.5 && precision > 0.4) score = Math.min(score + 10, 100);
+    // Generous boosts
+    if (coverage > 0.3 && precision > 0.3) score = Math.min(score + 15, 100);
+    if (precision > 0.6) score = Math.min(score + 10, 100);
     
-    // Floor at 20 if they drew something meaningful
-    if (userCount > 50) score = Math.max(score, 20);
+    // Floor at 25 if they drew something meaningful
+    if (userCount > 30) score = Math.max(score, 25);
     
     showScore(score, coverage, precision);
   }
@@ -1284,60 +1311,48 @@
   function showScore(score, coverage, precision) {
     const el = document.getElementById('score-display');
     
-    let colour, msg;
-    if (score >= 90) { colour = '#4ecca3'; msg = 'AMAZING! Perfect letter! 🌟'; }
-    else if (score >= 75) { colour = '#4ecca3'; msg = 'Brilliant! Really good! ⭐'; }
-    else if (score >= 60) { colour = '#ffd700'; msg = 'Great job! Getting there! 💪'; }
-    else if (score >= 40) { colour = '#feca57'; msg = 'Good try! Keep practising! 📈'; }
-    else { colour = '#e94560'; msg = 'Have another go! You can do it! 🌱'; }
-    
-    const coveragePct = Math.round(coverage * 100);
-    const precisionPct = Math.round(precision * 100);
+    let emoji, msg, colour;
+    if (score >= 80) {
+      emoji = '🌟'; msg = 'Amazing!'; colour = '#4ecca3';
+      fireConfetti();
+    } else if (score >= 60) {
+      emoji = '⭐'; msg = 'Great job!'; colour = '#4ecca3';
+      fireConfetti();
+    } else if (score >= 40) {
+      emoji = '💪'; msg = 'Getting there!'; colour = '#ffd700';
+    } else if (score >= 25) {
+      emoji = '👍'; msg = 'Good start! Try tracing the guide'; colour = '#feca57';
+    } else {
+      emoji = '✍️'; msg = 'Trace over the purple letter!'; colour = '#aaa';
+    }
     
     el.innerHTML = `
-      <div style="font-size:3rem; font-weight:900; color:${colour}; margin:10px 0;">${score}%</div>
+      <div class="score-emoji">${emoji}</div>
       <div class="score-msg" style="color:${colour};">${msg}</div>
-      <div style="margin-top:12px; width:100%;">
-        <div class="score-detail">📏 Shape coverage: ${coveragePct}%</div>
-        <div class="score-bar"><div class="score-bar-fill" style="width:${coveragePct}%; background:${coveragePct > 60 ? '#4ecca3' : '#feca57'};"></div></div>
-        <div class="score-detail">🎯 Staying on track: ${precisionPct}%</div>
-        <div class="score-bar"><div class="score-bar-fill" style="width:${precisionPct}%; background:${precisionPct > 60 ? '#4ecca3' : '#feca57'};"></div></div>
-      </div>
     `;
     
-    if (score >= 75) fireConfetti();
+    // Track practice count
+    practiceCount++;
+    practisedLetters[currentPracticeLetter] = (practisedLetters[currentPracticeLetter] || 0) + 1;
+    localStorage.setItem('practised-letters', JSON.stringify(practisedLetters));
+    buildLetterGrid();
+    
+    if (practiceCount > 1) {
+      document.getElementById('practice-count').textContent = `${practiceCount} tries this session`;
+    }
     
     // Track best score per letter
     const key = `best-letter-${currentPracticeLetter}`;
     const prev = parseInt(localStorage.getItem(key) || '0');
     if (score > prev) {
       localStorage.setItem(key, score.toString());
-      if (prev > 0) {
-        el.innerHTML += `<div style="color:var(--gold); margin-top:8px; font-size:0.9rem;">🏆 New personal best! (was ${prev}%)</div>`;
+      if (prev > 0 && score >= 40) {
+        el.innerHTML += `<div style="color:var(--gold); font-size:0.85rem; margin-top:4px;">🏆 New best!</div>`;
       }
-    } else if (prev > 0) {
-      el.innerHTML += `<div style="color:#666; margin-top:8px; font-size:0.9rem;">Personal best: ${prev}%</div>`;
     }
   }
 
-  function nextPracticeLetter() {
-    practiceCount++;
-    document.getElementById('practice-count').textContent = `✅ Practised ${practiceCount} time${practiceCount > 1 ? 's' : ''}`;
-    
-    // Track as practised
-    practisedLetters[currentPracticeLetter] = (practisedLetters[currentPracticeLetter] || 0) + 1;
-    localStorage.setItem('practised-letters', JSON.stringify(practisedLetters));
-    buildLetterGrid();
-    
-    // Encouragement
-    if (practiceCount === 3) fireConfetti();
-    if (practiceCount === 5) {
-      document.getElementById('practice-guide').textContent = '🌟 Five times! You\'re getting really good!';
-      fireConfetti();
-    }
-    
-    showGuide();
-  }
+  // nextPracticeLetter is now handled by arrow navigation (prevLetter/nextLetter)
 
   // --- Confetti ---
   function fireConfetti() {
