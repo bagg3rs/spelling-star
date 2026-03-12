@@ -222,6 +222,54 @@
     margin: 10px 0;
   }
 
+  /* Score display */
+  .score-display {
+    text-align: center;
+    margin: 15px 0;
+    min-height: 100px;
+  }
+  .score-ring {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 10px;
+  }
+  .score-ring canvas {
+    width: 120px;
+    height: 120px;
+  }
+  .score-ring .score-num {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: 900;
+  }
+  .score-msg {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-top: 8px;
+  }
+  .score-detail {
+    font-size: 0.9rem;
+    color: #888;
+    margin-top: 4px;
+  }
+  .score-bar {
+    width: 100%;
+    height: 12px;
+    background: #333;
+    border-radius: 6px;
+    margin: 8px 0;
+    overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.8s ease-out;
+  }
+
   /* Pen colour picker */
   .pen-colours {
     display: flex;
@@ -376,14 +424,17 @@
   <div class="guide-text" id="practice-guide"></div>
   <div class="canvas-container" style="max-width:460px; width:100%;">
     <canvas class="practice-canvas" id="practice-canvas"></canvas>
+    <canvas id="reference-canvas" style="display:none;"></canvas>
   </div>
   <div class="pen-colours" id="practice-pen-colours"></div>
   <div class="canvas-tools">
-    <button onclick="clearCanvas('practice-canvas')">🗑️ Clear</button>
+    <button onclick="clearPracticeCanvas()">🗑️ Clear</button>
     <button onclick="showGuide()">👁️ Show Guide</button>
+    <button class="btn success" style="padding:10px 20px; margin:0; min-width:auto; font-size:1rem;" onclick="scoreDrawing()">✅ Check!</button>
     <button onclick="nextPracticeLetter()">Next →</button>
   </div>
-  <div id="practice-count" style="margin-top:15px; color:var(--gold);"></div>
+  <div class="score-display" id="score-display"></div>
+  <div id="practice-count" style="margin-top:10px; color:var(--gold);"></div>
   <button class="btn secondary" style="margin-top:15px;" onclick="showScreen('letter-screen')">← Back to Letters</button>
 </div>
 
@@ -835,15 +886,24 @@
     
     // Draw the guide letter faintly
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGuideLetter(ctx, canvas, rect, 0.15);
+    drawBaseline(ctx, canvas, rect);
+    
+    // Clear score display
+    document.getElementById('score-display').innerHTML = '';
+  }
+
+  function drawGuideLetter(ctx, canvas, rect, alpha) {
     ctx.save();
     ctx.font = `${rect.height * 0.7 * window.devicePixelRatio}px -apple-system, sans-serif`;
-    ctx.fillStyle = 'rgba(124, 58, 237, 0.15)';
+    ctx.fillStyle = `rgba(124, 58, 237, ${alpha})`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(currentPracticeLetter, canvas.width / 2, canvas.height / 2);
     ctx.restore();
-    
-    // Draw baseline
+  }
+
+  function drawBaseline(ctx, canvas, rect) {
     const baseY = rect.height * 0.72;
     ctx.beginPath();
     ctx.moveTo(20, baseY * window.devicePixelRatio);
@@ -855,6 +915,143 @@
     ctx.setLineDash([]);
   }
 
+  function clearPracticeCanvas() {
+    const canvas = document.getElementById('practice-canvas');
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGuideLetter(ctx, canvas, rect, 0.15);
+    drawBaseline(ctx, canvas, rect);
+    document.getElementById('score-display').innerHTML = '';
+  }
+
+  // --- Pixel Overlap Scoring ---
+  function scoreDrawing() {
+    const userCanvas = document.getElementById('practice-canvas');
+    const refCanvas = document.getElementById('reference-canvas');
+    const rect = userCanvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio;
+    
+    // Setup reference canvas at same size
+    refCanvas.width = userCanvas.width;
+    refCanvas.height = userCanvas.height;
+    const refCtx = refCanvas.getContext('2d');
+    refCtx.scale(dpr, dpr);
+    
+    // Draw the reference letter with a generous stroke for tolerance
+    refCtx.clearRect(0, 0, refCanvas.width, refCanvas.height);
+    refCtx.save();
+    const fontSize = rect.height * 0.7 * dpr;
+    refCtx.font = `${fontSize}px -apple-system, sans-serif`;
+    refCtx.textAlign = 'center';
+    refCtx.textBaseline = 'middle';
+    
+    // Fill the letter
+    refCtx.fillStyle = 'white';
+    refCtx.fillText(currentPracticeLetter, refCanvas.width / (2 * dpr), refCanvas.height / (2 * dpr));
+    
+    // Also stroke it with a wide line for tolerance zone (finger is imprecise)
+    refCtx.strokeStyle = 'white';
+    refCtx.lineWidth = 20; // generous tolerance
+    refCtx.lineJoin = 'round';
+    refCtx.strokeText(currentPracticeLetter, refCanvas.width / (2 * dpr), refCanvas.height / (2 * dpr));
+    refCtx.restore();
+    
+    // Get pixel data
+    const userPixels = userCanvas.getContext('2d').getImageData(0, 0, userCanvas.width, userCanvas.height).data;
+    const refPixels = refCtx.getImageData(0, 0, refCanvas.width, refCanvas.height).data;
+    
+    let userCount = 0;      // pixels the user drew
+    let refCount = 0;       // pixels in reference letter
+    let overlapCount = 0;   // pixels in both
+    let outsideCount = 0;   // user pixels outside reference
+    
+    // Sample every 4th pixel for performance
+    const step = 4;
+    for (let i = 0; i < userPixels.length; i += 4 * step) {
+      const userAlpha = userPixels[i + 3];
+      const refAlpha = refPixels[i + 3];
+      
+      // Skip the guide letter (it's purple with low alpha ~38)
+      // User drawing has alpha > 200 typically
+      const isUserDrawn = userAlpha > 100;
+      const isGuideOnly = userAlpha > 20 && userAlpha < 80; // guide letter range
+      
+      const isRef = refAlpha > 50;
+      
+      if (isRef) refCount++;
+      
+      if (isUserDrawn && !isGuideOnly) {
+        userCount++;
+        if (isRef) overlapCount++;
+        else outsideCount++;
+      }
+    }
+    
+    // Bail if nothing drawn
+    if (userCount < 10) {
+      document.getElementById('score-display').innerHTML = 
+        '<p style="color:#aaa; font-size:1.1rem;">Draw the letter first, then check! ✍️</p>';
+      return;
+    }
+    
+    // Calculate scores
+    const coverage = refCount > 0 ? Math.min(overlapCount / refCount, 1) : 0;   // how much of the letter did you trace
+    const precision = userCount > 0 ? overlapCount / userCount : 0;              // how much stayed on the letter
+    
+    // Weighted score: coverage 60%, precision 40% (reward tracing the whole letter)
+    // Be generous — this is for a 6-year-old
+    let score = Math.round((coverage * 0.6 + precision * 0.4) * 100);
+    
+    // Boost: if coverage > 50% and precision > 40%, add a bonus
+    if (coverage > 0.5 && precision > 0.4) score = Math.min(score + 10, 100);
+    
+    // Floor at 20 if they drew something meaningful
+    if (userCount > 50) score = Math.max(score, 20);
+    
+    showScore(score, coverage, precision);
+  }
+
+  function showScore(score, coverage, precision) {
+    const el = document.getElementById('score-display');
+    
+    let colour, msg;
+    if (score >= 90) { colour = '#4ecca3'; msg = 'AMAZING! Perfect letter! 🌟'; }
+    else if (score >= 75) { colour = '#4ecca3'; msg = 'Brilliant! Really good! ⭐'; }
+    else if (score >= 60) { colour = '#ffd700'; msg = 'Great job! Getting there! 💪'; }
+    else if (score >= 40) { colour = '#feca57'; msg = 'Good try! Keep practising! 📈'; }
+    else { colour = '#e94560'; msg = 'Have another go! You can do it! 🌱'; }
+    
+    const coveragePct = Math.round(coverage * 100);
+    const precisionPct = Math.round(precision * 100);
+    
+    el.innerHTML = `
+      <div style="font-size:3rem; font-weight:900; color:${colour}; margin:10px 0;">${score}%</div>
+      <div class="score-msg" style="color:${colour};">${msg}</div>
+      <div style="margin-top:12px; width:100%;">
+        <div class="score-detail">📏 Shape coverage: ${coveragePct}%</div>
+        <div class="score-bar"><div class="score-bar-fill" style="width:${coveragePct}%; background:${coveragePct > 60 ? '#4ecca3' : '#feca57'};"></div></div>
+        <div class="score-detail">🎯 Staying on track: ${precisionPct}%</div>
+        <div class="score-bar"><div class="score-bar-fill" style="width:${precisionPct}%; background:${precisionPct > 60 ? '#4ecca3' : '#feca57'};"></div></div>
+      </div>
+    `;
+    
+    if (score >= 75) fireConfetti();
+    
+    // Track best score per letter
+    const key = `best-letter-${currentPracticeLetter}`;
+    const prev = parseInt(localStorage.getItem(key) || '0');
+    if (score > prev) {
+      localStorage.setItem(key, score.toString());
+      if (prev > 0) {
+        el.innerHTML += `<div style="color:var(--gold); margin-top:8px; font-size:0.9rem;">🏆 New personal best! (was ${prev}%)</div>`;
+      }
+    } else if (prev > 0) {
+      el.innerHTML += `<div style="color:#666; margin-top:8px; font-size:0.9rem;">Personal best: ${prev}%</div>`;
+    }
+  }
+  }
+
   function nextPracticeLetter() {
     practiceCount++;
     document.getElementById('practice-count').textContent = `✅ Practised ${practiceCount} time${practiceCount > 1 ? 's' : ''}`;
@@ -862,6 +1059,7 @@
     // Track as practised
     practisedLetters[currentPracticeLetter] = (practisedLetters[currentPracticeLetter] || 0) + 1;
     localStorage.setItem('practised-letters', JSON.stringify(practisedLetters));
+    buildLetterGrid();
     
     // Encouragement
     if (practiceCount === 3) fireConfetti();
