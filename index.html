@@ -929,34 +929,34 @@
     // Top line (ascender) — light
     ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     ctx.beginPath();
-    ctx.moveTo(pad * dpr, layout.topY * dpr);
-    ctx.lineTo((rect.width - pad) * dpr, layout.topY * dpr);
+    ctx.moveTo(pad, layout.topY);
+    ctx.lineTo(rect.width - pad, layout.topY);
     ctx.stroke();
     
     // Middle line (x-height) — dashed, more visible
-    ctx.strokeStyle = 'rgba(124, 58, 237, 0.25)';
+    ctx.strokeStyle = 'rgba(124, 58, 237, 0.35)';
     ctx.beginPath();
-    ctx.moveTo(pad * dpr, layout.midY * dpr);
-    ctx.lineTo((rect.width - pad) * dpr, layout.midY * dpr);
+    ctx.moveTo(pad, layout.midY);
+    ctx.lineTo(rect.width - pad, layout.midY);
     ctx.stroke();
     
     // Baseline — solid, most visible
     ctx.setLineDash([]);
-    ctx.strokeStyle = 'rgba(124, 58, 237, 0.35)';
+    ctx.strokeStyle = 'rgba(124, 58, 237, 0.5)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(pad * dpr, layout.baseY * dpr);
-    ctx.lineTo((rect.width - pad) * dpr, layout.baseY * dpr);
+    ctx.moveTo(pad, layout.baseY);
+    ctx.lineTo(rect.width - pad, layout.baseY);
     ctx.stroke();
     
     // Descender line — only if relevant
     if (letterMeta.descenders.includes(currentPracticeLetter)) {
       ctx.setLineDash([8, 6]);
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.strokeStyle = 'rgba(124, 58, 237, 0.2)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(pad * dpr, layout.descY * dpr);
-      ctx.lineTo((rect.width - pad) * dpr, layout.descY * dpr);
+      ctx.moveTo(pad, layout.descY);
+      ctx.lineTo(rect.width - pad, layout.descY);
       ctx.stroke();
     }
     
@@ -972,7 +972,7 @@
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawWritingLines(ctx, canvas, rect, dpr);
-    drawGuideLetter(ctx, canvas, rect, 0.25); // more visible guide
+    drawGuideLetter(ctx, canvas, rect, 0.35); // clearly visible guide
     
     document.getElementById('score-display').innerHTML = '';
   }
@@ -982,18 +982,21 @@
     const layout = getLetterLayout(rect, dpr);
     
     ctx.save();
-    ctx.font = `${layout.fontSize * dpr}px -apple-system, sans-serif`;
-    ctx.fillStyle = `rgba(124, 58, 237, ${alpha})`;
+    // Note: ctx.scale(dpr) is already set, so use CSS pixel values
+    ctx.font = `${layout.fontSize}px -apple-system, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic'; // sits ON the baseline
-    ctx.fillText(currentPracticeLetter, layout.centerX * dpr, layout.baseY * dpr);
     
-    // Also draw a dotted outline for extra guidance
+    // Fill the guide letter — nice and visible
+    ctx.fillStyle = `rgba(124, 58, 237, ${alpha})`;
+    ctx.fillText(currentPracticeLetter, layout.centerX, layout.baseY);
+    
+    // Dotted outline for extra guidance
     if (alpha >= 0.2) {
-      ctx.strokeStyle = `rgba(124, 58, 237, ${alpha + 0.15})`;
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = `rgba(124, 58, 237, ${Math.min(alpha + 0.2, 0.7)})`;
+      ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]);
-      ctx.strokeText(currentPracticeLetter, layout.centerX * dpr, layout.baseY * dpr);
+      ctx.strokeText(currentPracticeLetter, layout.centerX, layout.baseY);
       ctx.setLineDash([]);
     }
     ctx.restore();
@@ -1006,7 +1009,7 @@
     const dpr = window.devicePixelRatio;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawWritingLines(ctx, canvas, rect, dpr);
-    drawGuideLetter(ctx, canvas, rect, 0.25);
+    drawGuideLetter(ctx, canvas, rect, 0.35);
     document.getElementById('score-display').innerHTML = '';
   }
 
@@ -1025,21 +1028,22 @@
     refCtx.scale(dpr, dpr);
     
     // Draw the reference letter with generous tolerance zone
+    // Uses CSS pixel coords since ctx.scale(dpr) handles the rest
     refCtx.clearRect(0, 0, refCanvas.width, refCanvas.height);
     refCtx.save();
-    refCtx.font = `${layout.fontSize * dpr}px -apple-system, sans-serif`;
+    refCtx.font = `${layout.fontSize}px -apple-system, sans-serif`;
     refCtx.textAlign = 'center';
     refCtx.textBaseline = 'alphabetic';
     
     // Fill the letter
     refCtx.fillStyle = 'white';
-    refCtx.fillText(currentPracticeLetter, layout.centerX * dpr, layout.baseY * dpr);
+    refCtx.fillText(currentPracticeLetter, layout.centerX, layout.baseY);
     
     // Stroke with wide line for tolerance (finger is imprecise)
     refCtx.strokeStyle = 'white';
     refCtx.lineWidth = 25; // generous tolerance for a 6-year-old
     refCtx.lineJoin = 'round';
-    refCtx.strokeText(currentPracticeLetter, layout.centerX * dpr, layout.baseY * dpr);
+    refCtx.strokeText(currentPracticeLetter, layout.centerX, layout.baseY);
     refCtx.restore();
     
     // Get pixel data
