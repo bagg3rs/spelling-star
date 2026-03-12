@@ -25,6 +25,8 @@
     flex-direction: column;
     align-items: center;
     overflow-x: hidden;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   .screen { display: none; width: 100%; max-width: 500px; padding: 20px; flex-direction: column; align-items: center; }
@@ -51,6 +53,7 @@
   .btn.success { background: var(--success); }
   .btn.gold { background: var(--gold); color: #333; }
   .btn.secondary { background: #333; color: #ccc; font-size: 1rem; padding: 12px 24px; min-width: auto; }
+  .btn.purple { background: #7c3aed; }
 
   /* Parent setup screen */
   #parent-screen textarea {
@@ -73,14 +76,14 @@
   .word-num { font-size: 1rem; color: #666; margin-bottom: 5px; }
   
   .hear-btn {
-    width: 120px;
-    height: 120px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
     background: var(--accent);
     border: none;
-    font-size: 3rem;
+    font-size: 2.5rem;
     cursor: pointer;
-    margin: 20px 0;
+    margin: 15px 0;
     transition: transform 0.2s;
     display: flex;
     align-items: center;
@@ -90,7 +93,7 @@
 
   .input-area {
     width: 100%;
-    margin: 20px 0;
+    margin: 15px 0;
   }
   
   #spell-input {
@@ -111,14 +114,14 @@
   #spell-input.wrong { border-color: var(--accent); background: #3a1a1a; }
 
   .feedback {
-    min-height: 80px;
+    min-height: 60px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
     font-weight: 700;
-    margin: 10px 0;
+    margin: 8px 0;
   }
   .feedback .correct-word {
     font-size: 1.1rem;
@@ -127,14 +130,117 @@
     letter-spacing: 2px;
   }
 
-  /* Stars display */
-  .stars {
-    font-size: 2rem;
+  .stars { font-size: 2rem; margin: 8px 0; min-height: 36px; }
+  .streak { font-size: 1rem; color: var(--gold); min-height: 24px; }
+  
+  .attempts { display: flex; gap: 8px; margin: 8px 0; }
+  .attempt-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #333; border: 2px solid #555;
+  }
+  .attempt-dot.used { background: var(--accent); border-color: var(--accent); }
+  .attempt-dot.correct { background: var(--success); border-color: var(--success); }
+
+  /* Writing canvas */
+  .canvas-container {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
     margin: 10px 0;
-    min-height: 40px;
+  }
+  .writing-canvas {
+    width: 100%;
+    height: 200px;
+    background: var(--card);
+    border: 3px solid #333;
+    border-radius: 16px;
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .writing-canvas.active { border-color: #7c3aed; }
+  .canvas-label {
+    font-size: 0.9rem;
+    color: #888;
+    text-align: center;
+    margin: 4px 0;
+  }
+  .canvas-tools {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 8px 0;
+  }
+  .canvas-tools button {
+    background: #333;
+    color: #ccc;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .canvas-tools button:active { background: #555; }
+
+  /* Letter practice */
+  .letter-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    width: 100%;
+    margin: 15px 0;
+  }
+  .letter-btn {
+    aspect-ratio: 1;
+    background: var(--card);
+    border: 2px solid #333;
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .letter-btn:active { background: #7c3aed; border-color: #7c3aed; }
+  .letter-btn.practised { border-color: var(--success); }
+
+  .practice-canvas {
+    width: 100%;
+    height: 300px;
+    background: var(--card);
+    border: 3px solid #7c3aed;
+    border-radius: 16px;
+    touch-action: none;
+    cursor: crosshair;
   }
 
-  /* Results screen */
+  .guide-text {
+    font-size: 1.2rem;
+    color: #aaa;
+    text-align: center;
+    margin: 10px 0;
+  }
+
+  /* Pen colour picker */
+  .pen-colours {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 10px 0;
+  }
+  .pen-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .pen-dot:active { transform: scale(0.9); }
+  .pen-dot.selected { border-color: white; transform: scale(1.15); }
+
+  /* Results */
   .result-card {
     background: var(--card);
     border-radius: 16px;
@@ -143,16 +249,8 @@
     text-align: center;
     margin: 20px 0;
   }
-  .big-score {
-    font-size: 4rem;
-    font-weight: 900;
-    color: var(--gold);
-  }
-  .result-list {
-    list-style: none;
-    width: 100%;
-    margin: 20px 0;
-  }
+  .big-score { font-size: 4rem; font-weight: 900; color: var(--gold); }
+  .result-list { list-style: none; width: 100%; margin: 20px 0; }
   .result-list li {
     padding: 12px 16px;
     background: var(--card);
@@ -166,20 +264,39 @@
   .result-list li.got-it { border-left: 4px solid var(--success); }
   .result-list li.missed { border-left: 4px solid var(--accent); }
 
-  /* Confetti canvas */
   #confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
 
-  /* Streak flame */
-  .streak { font-size: 1rem; color: var(--gold); min-height: 24px; }
-
-  /* Attempts display */
-  .attempts { display: flex; gap: 8px; margin: 10px 0; }
-  .attempt-dot {
-    width: 16px; height: 16px; border-radius: 50%;
-    background: #333; border: 2px solid #555;
+  /* Toggle switch for handwriting mode */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 15px 0;
+    font-size: 1rem;
+    color: #aaa;
   }
-  .attempt-dot.used { background: var(--accent); border-color: var(--accent); }
-  .attempt-dot.correct { background: var(--success); border-color: var(--success); }
+  .toggle {
+    position: relative;
+    width: 52px;
+    height: 28px;
+    background: #333;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle.on { background: #7c3aed; }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle.on::after { transform: translateX(24px); }
 </style>
 </head>
 <body>
@@ -190,10 +307,11 @@
 <div id="menu-screen" class="screen active">
   <h1>⭐ Spelling Star</h1>
   <h2>Ready to practise?</h2>
-  <div id="current-words-info" style="margin: 20px 0; color: #aaa;"></div>
-  <button class="btn" id="play-btn" onclick="startGame()">▶️ Play!</button>
+  <div id="current-words-info" style="margin: 15px 0; color: #aaa;"></div>
+  <button class="btn" id="play-btn" onclick="startGame()">▶️ Spelling Test</button>
+  <button class="btn purple" onclick="showScreen('letter-screen')">✍️ Letter Practice</button>
   <button class="btn secondary" onclick="showScreen('parent-screen')">📝 Set Words</button>
-  <div id="best-score" style="margin-top: 30px; color: var(--gold);"></div>
+  <div id="best-score" style="margin-top: 20px; color: var(--gold);"></div>
 </div>
 
 <!-- PARENT SETUP SCREEN -->
@@ -202,6 +320,10 @@
   <h2>One word per line</h2>
   <textarea id="words-input" placeholder="cat&#10;dog&#10;the&#10;said&#10;have"></textarea>
   <p class="hint">Paste or type the words from the spelling test</p>
+  <div class="toggle-row">
+    <div class="toggle" id="handwriting-toggle" onclick="toggleHandwriting()"></div>
+    <span>✍️ Write words before spelling</span>
+  </div>
   <button class="btn success" onclick="saveWords()">✅ Save Words</button>
   <button class="btn secondary" onclick="showScreen('menu-screen')">← Back</button>
 </div>
@@ -213,18 +335,56 @@
   <div class="streak" id="streak-display"></div>
   
   <button class="hear-btn" id="hear-btn" onclick="sayWord()">🔊</button>
-  <p class="hint">Tap to hear the word</p>
-  
-  <div class="input-area">
-    <input type="text" id="spell-input" autocomplete="off" autocapitalize="none" spellcheck="false" autocorrect="off">
-  </div>
+  <p class="hint" id="hear-hint">Tap to hear the word</p>
 
-  <div class="attempts" id="attempts-display"></div>
+  <!-- Handwriting step (shown before typing if enabled) -->
+  <div id="writing-step" style="display:none; width:100%;">
+    <div class="canvas-label">✍️ Write the word with your finger</div>
+    <div class="canvas-container">
+      <canvas class="writing-canvas" id="spell-canvas"></canvas>
+    </div>
+    <div class="pen-colours" id="spell-pen-colours"></div>
+    <div class="canvas-tools">
+      <button onclick="clearCanvas('spell-canvas')">🗑️ Clear</button>
+      <button class="btn success" style="padding:10px 24px; margin:0; min-width:auto; font-size:1rem;" onclick="doneWriting()">Done ✍️ → Type it</button>
+    </div>
+  </div>
   
-  <div class="feedback" id="feedback"></div>
-  
-  <button class="btn" id="check-btn" onclick="checkSpelling()">Check ✓</button>
-  <button class="btn success" id="next-btn" onclick="nextWord()" style="display:none;">Next →</button>
+  <!-- Typing step -->
+  <div id="typing-step" style="width:100%;">
+    <div class="input-area">
+      <input type="text" id="spell-input" autocomplete="off" autocapitalize="none" spellcheck="false" autocorrect="off">
+    </div>
+    <div class="attempts" id="attempts-display"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn" id="check-btn" onclick="checkSpelling()">Check ✓</button>
+    <button class="btn success" id="next-btn" onclick="nextWord()" style="display:none;">Next →</button>
+  </div>
+</div>
+
+<!-- LETTER PRACTICE SCREEN -->
+<div id="letter-screen" class="screen">
+  <h1>✍️ Letter Practice</h1>
+  <h2>Pick a letter to practise</h2>
+  <div class="letter-grid" id="letter-grid"></div>
+  <button class="btn secondary" onclick="showScreen('menu-screen')">← Back</button>
+</div>
+
+<!-- LETTER DRAW SCREEN -->
+<div id="letter-draw-screen" class="screen">
+  <h1 id="practice-letter-title"></h1>
+  <div class="guide-text" id="practice-guide"></div>
+  <div class="canvas-container" style="max-width:460px; width:100%;">
+    <canvas class="practice-canvas" id="practice-canvas"></canvas>
+  </div>
+  <div class="pen-colours" id="practice-pen-colours"></div>
+  <div class="canvas-tools">
+    <button onclick="clearCanvas('practice-canvas')">🗑️ Clear</button>
+    <button onclick="showGuide()">👁️ Show Guide</button>
+    <button onclick="nextPracticeLetter()">Next →</button>
+  </div>
+  <div id="practice-count" style="margin-top:15px; color:var(--gold);"></div>
+  <button class="btn secondary" style="margin-top:15px;" onclick="showScreen('letter-screen')">← Back to Letters</button>
 </div>
 
 <!-- RESULTS SCREEN -->
@@ -243,11 +403,31 @@
   // --- State ---
   let words = [];
   let currentIndex = 0;
-  let results = []; // { word, attempts, gotIt }
+  let results = [];
   let streak = 0;
   let maxAttempts = 3;
   let attemptsUsed = 0;
   let answered = false;
+  let handwritingEnabled = true;
+  let inWritingStep = false;
+
+  // Drawing state
+  const canvasState = {};
+  let currentPenColour = '#e94560';
+  const penColours = [
+    { colour: '#e94560', name: 'Red' },
+    { colour: '#4ecca3', name: 'Green' },
+    { colour: '#ffd700', name: 'Gold' },
+    { colour: '#00d2ff', name: 'Blue' },
+    { colour: '#ff6b6b', name: 'Pink' },
+    { colour: '#a855f7', name: 'Purple' },
+    { colour: '#ffffff', name: 'White' },
+  ];
+
+  // Letter practice state
+  let currentPracticeLetter = '';
+  let practiceCount = 0;
+  let practisedLetters = JSON.parse(localStorage.getItem('practised-letters') || '{}');
 
   // --- Init ---
   function init() {
@@ -256,7 +436,11 @@
       words = JSON.parse(saved);
       updateWordsInfo();
     }
+    handwritingEnabled = localStorage.getItem('handwriting-mode') !== 'false';
+    updateToggle();
     updateBestScore();
+    buildLetterGrid();
+    buildPenPickers();
     
     document.getElementById('spell-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -264,6 +448,23 @@
         else checkSpelling();
       }
     });
+  }
+
+  // --- Pen colour picker ---
+  function buildPenPickers() {
+    ['spell-pen-colours', 'practice-pen-colours'].forEach(id => {
+      const el = document.getElementById(id);
+      el.innerHTML = penColours.map(p =>
+        `<div class="pen-dot ${p.colour === currentPenColour ? 'selected' : ''}" 
+              style="background:${p.colour}" 
+              onclick="selectPen('${p.colour}')"></div>`
+      ).join('');
+    });
+  }
+
+  function selectPen(colour) {
+    currentPenColour = colour;
+    buildPenPickers();
   }
 
   // --- Screen management ---
@@ -280,16 +481,23 @@
     }
   }
 
+  // --- Toggle handwriting ---
+  function toggleHandwriting() {
+    handwritingEnabled = !handwritingEnabled;
+    localStorage.setItem('handwriting-mode', handwritingEnabled);
+    updateToggle();
+  }
+  function updateToggle() {
+    const el = document.getElementById('handwriting-toggle');
+    if (handwritingEnabled) el.classList.add('on');
+    else el.classList.remove('on');
+  }
+
   // --- Parent: save words ---
   function saveWords() {
     const raw = document.getElementById('words-input').value;
     words = raw.split('\n').map(w => w.trim().toLowerCase()).filter(w => w.length > 0);
-    
-    if (words.length === 0) {
-      alert('Add at least one word!');
-      return;
-    }
-    
+    if (words.length === 0) { alert('Add at least one word!'); return; }
     localStorage.setItem('spelling-words', JSON.stringify(words));
     showScreen('menu-screen');
   }
@@ -311,19 +519,80 @@
   function updateBestScore() {
     const best = localStorage.getItem('spelling-best');
     const el = document.getElementById('best-score');
-    if (best && words.length > 0) {
-      el.textContent = `⭐ Best: ${best}/${words.length}`;
-    } else {
-      el.textContent = '';
-    }
+    if (best && words.length > 0) el.textContent = `⭐ Best: ${best}/${words.length}`;
+    else el.textContent = '';
   }
 
-  // --- Game ---
-  function startGame() {
-    if (words.length === 0) {
-      showScreen('parent-screen');
-      return;
+  // --- Drawing Canvas ---
+  function initCanvas(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    
+    // Set actual pixel size
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * window.devicePixelRatio;
+    canvas.height = rect.height * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    
+    const state = { drawing: false, lastX: 0, lastY: 0 };
+    canvasState[canvasId] = state;
+
+    function getPos(e) {
+      const r = canvas.getBoundingClientRect();
+      const touch = e.touches ? e.touches[0] : e;
+      return { x: touch.clientX - r.left, y: touch.clientY - r.top };
     }
+
+    function startDraw(e) {
+      e.preventDefault();
+      state.drawing = true;
+      const pos = getPos(e);
+      state.lastX = pos.x;
+      state.lastY = pos.y;
+      canvas.classList.add('active');
+    }
+
+    function draw(e) {
+      e.preventDefault();
+      if (!state.drawing) return;
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(state.lastX, state.lastY);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.strokeStyle = currentPenColour;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      state.lastX = pos.x;
+      state.lastY = pos.y;
+    }
+
+    function stopDraw(e) {
+      e.preventDefault();
+      state.drawing = false;
+      canvas.classList.remove('active');
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('mouseleave', stopDraw);
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDraw, { passive: false });
+    canvas.addEventListener('touchcancel', stopDraw, { passive: false });
+  }
+
+  function clearCanvas(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // --- Spelling Game ---
+  function startGame() {
+    if (words.length === 0) { showScreen('parent-screen'); return; }
     currentIndex = 0;
     results = [];
     streak = 0;
@@ -334,11 +603,12 @@
   function loadWord() {
     answered = false;
     attemptsUsed = 0;
+    inWritingStep = handwritingEnabled;
+    
     const input = document.getElementById('spell-input');
     input.value = '';
     input.className = '';
     input.disabled = false;
-    input.focus();
     
     document.getElementById('check-btn').style.display = '';
     document.getElementById('next-btn').style.display = 'none';
@@ -346,11 +616,33 @@
     document.getElementById('word-progress').textContent = `Word ${currentIndex + 1} of ${words.length}`;
     document.getElementById('stars-display').textContent = '⭐'.repeat(results.filter(r => r.gotIt).length);
     document.getElementById('streak-display').textContent = streak >= 2 ? `🔥 ${streak} in a row!` : '';
-    
     updateAttemptDots();
+
+    if (handwritingEnabled) {
+      document.getElementById('writing-step').style.display = '';
+      document.getElementById('typing-step').style.display = 'none';
+      document.getElementById('hear-hint').textContent = 'Tap to hear, then write it!';
+      // Init canvas after it's visible
+      setTimeout(() => {
+        initCanvas('spell-canvas');
+        clearCanvas('spell-canvas');
+      }, 50);
+    } else {
+      document.getElementById('writing-step').style.display = 'none';
+      document.getElementById('typing-step').style.display = '';
+      document.getElementById('hear-hint').textContent = 'Tap to hear the word';
+      input.focus();
+    }
     
-    // Auto-say the word
     setTimeout(() => sayWord(), 400);
+  }
+
+  function doneWriting() {
+    inWritingStep = false;
+    document.getElementById('writing-step').style.display = 'none';
+    document.getElementById('typing-step').style.display = '';
+    document.getElementById('hear-hint').textContent = 'Now type it!';
+    document.getElementById('spell-input').focus();
   }
 
   function updateAttemptDots() {
@@ -371,17 +663,11 @@
       const utter = new SpeechSynthesisUtterance(word);
       utter.lang = 'en-GB';
       utter.rate = 0.8;
-      utter.pitch = 1.0;
-      
-      // Try to pick a UK English voice
       const voices = window.speechSynthesis.getVoices();
       const ukVoice = voices.find(v => v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en'));
       if (ukVoice) utter.voice = ukVoice;
-      
       window.speechSynthesis.speak(utter);
     }
-    
-    // Animate button
     const btn = document.getElementById('hear-btn');
     btn.style.transform = 'scale(1.1)';
     setTimeout(() => btn.style.transform = '', 200);
@@ -389,7 +675,6 @@
 
   function checkSpelling() {
     if (answered) return;
-    
     const input = document.getElementById('spell-input');
     const guess = input.value.trim().toLowerCase();
     const correct = words[currentIndex];
@@ -401,19 +686,16 @@
     }
 
     if (guess === correct) {
-      // Correct!
       answered = true;
       input.className = 'correct';
       input.disabled = true;
       streak++;
       
-      // Mark attempt dots
       const dots = document.querySelectorAll('.attempt-dot');
       dots.forEach((d, i) => { if (i <= attemptsUsed) d.className = 'attempt-dot correct'; });
       
       const messages = ['Amazing! 🎉', 'Brilliant! ⭐', 'You got it! 💪', 'Super star! 🌟', 'Nailed it! 🎯', 'Fantastic! 🚀'];
       document.getElementById('feedback').innerHTML = messages[Math.floor(Math.random() * messages.length)];
-      
       results.push({ word: correct, attempts: attemptsUsed + 1, gotIt: true });
       
       document.getElementById('check-btn').style.display = 'none';
@@ -422,30 +704,22 @@
       document.getElementById('streak-display').textContent = streak >= 2 ? `🔥 ${streak} in a row!` : '';
       
       if (attemptsUsed === 0) fireConfetti();
-      
     } else {
-      // Wrong
       attemptsUsed++;
       updateAttemptDots();
       input.className = 'wrong';
       setTimeout(() => input.className = '', 500);
       
       if (attemptsUsed >= maxAttempts) {
-        // Out of attempts
         answered = true;
         input.disabled = true;
         streak = 0;
-        
         document.getElementById('feedback').innerHTML = 
           `Not quite 😊<span class="correct-word">It was: <strong>${correct}</strong></span>`;
         document.getElementById('streak-display').textContent = '';
-        
         results.push({ word: correct, attempts: attemptsUsed, gotIt: false });
-        
         document.getElementById('check-btn').style.display = 'none';
         document.getElementById('next-btn').style.display = '';
-        
-        // Say the correct word slowly
         setTimeout(() => {
           if ('speechSynthesis' in window) {
             const utter = new SpeechSynthesisUtterance(correct);
@@ -454,9 +728,7 @@
             window.speechSynthesis.speak(utter);
           }
         }, 500);
-        
       } else {
-        // Still has attempts
         const hints = [];
         if (attemptsUsed === 1) hints.push(`Hint: it has ${correct.length} letters`);
         if (attemptsUsed === 2) hints.push(`Hint: it starts with "${correct[0]}"`);
@@ -469,17 +741,13 @@
 
   function nextWord() {
     currentIndex++;
-    if (currentIndex >= words.length) {
-      showResults();
-    } else {
-      loadWord();
-    }
+    if (currentIndex >= words.length) showResults();
+    else loadWord();
   }
 
   // --- Results ---
   function showResults() {
     showScreen('results-screen');
-    
     const correct = results.filter(r => r.gotIt).length;
     const total = results.length;
     const pct = Math.round((correct / total) * 100);
@@ -495,19 +763,114 @@
     
     document.getElementById('final-message').textContent = msg;
     
-    const list = document.getElementById('result-list');
-    list.innerHTML = results.map(r => `
+    document.getElementById('result-list').innerHTML = results.map(r => `
       <li class="${r.gotIt ? 'got-it' : 'missed'}">
         <span>${r.word}</span>
         <span>${r.gotIt ? (r.attempts === 1 ? '⭐' : `✅ (${r.attempts} tries)`) : '❌'}</span>
       </li>
     `).join('');
     
-    // Save best score
     const prev = parseInt(localStorage.getItem('spelling-best') || '0');
     if (correct > prev) localStorage.setItem('spelling-best', correct.toString());
-    
     if (pct === 100) fireConfetti();
+  }
+
+  // --- Letter Practice ---
+  function buildLetterGrid() {
+    const grid = document.getElementById('letter-grid');
+    const letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+    grid.innerHTML = letters.map(l => 
+      `<button class="letter-btn ${practisedLetters[l] ? 'practised' : ''}" onclick="startLetterPractice('${l}')">${l}</button>`
+    ).join('');
+  }
+
+  function startLetterPractice(letter) {
+    currentPracticeLetter = letter;
+    practiceCount = 0;
+    showScreen('letter-draw-screen');
+    document.getElementById('practice-letter-title').textContent = `✍️ Letter: ${letter.toUpperCase()} ${letter}`;
+    
+    const guides = {
+      a: 'Start at 2 o\'clock → anticlockwise circle → up → straight down',
+      b: 'Start at top → straight down → back up halfway → clockwise bump',
+      c: 'Start at 2 o\'clock → anticlockwise curve → stop at 4 o\'clock',
+      d: 'Start at 2 o\'clock → anticlockwise circle → up to top → straight down',
+      e: 'Start in middle → right stroke → curve up and around anticlockwise',
+      f: 'Start at top right → curve left and down → cross bar',
+      g: 'Start at 2 o\'clock → anticlockwise circle → straight down below line → curl left',
+      h: 'Start at top → straight down → back up halfway → arch over → down',
+      i: 'Start at middle → straight down → dot on top',
+      j: 'Start at middle → straight down below line → curl left → dot on top',
+      k: 'Start at top → straight down → diagonal in from right → diagonal out to right',
+      l: 'Start at top → straight down',
+      m: 'Start at middle → down → up → arch over → down → up → arch over → down',
+      n: 'Start at middle → down → back up → arch over → down',
+      o: 'Start at 2 o\'clock → anticlockwise all the way around',
+      p: 'Start at middle → straight down below line → back up → clockwise bump',
+      q: 'Start at 2 o\'clock → anticlockwise circle → straight down below line → flick right',
+      r: 'Start at middle → down → back up → small curve right',
+      s: 'Start at top → curve left → curve back right → finish left',
+      t: 'Start at top → straight down → cross bar',
+      u: 'Start at middle → down → curve right → up → down',
+      v: 'Start at top left → diagonal down to centre → diagonal up to right',
+      w: 'Start at top → down → up → down → up (zigzag)',
+      x: 'Diagonal down right → lift → diagonal down left',
+      y: 'Start at top left → diagonal to centre → start top right → diagonal down through → below line',
+      z: 'Left to right across top → diagonal down left → left to right across bottom'
+    };
+    
+    document.getElementById('practice-guide').textContent = guides[letter] || `Trace the letter ${letter}`;
+    document.getElementById('practice-count').textContent = '';
+    
+    setTimeout(() => {
+      initCanvas('practice-canvas');
+      showGuide();
+    }, 50);
+  }
+
+  function showGuide() {
+    const canvas = document.getElementById('practice-canvas');
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    
+    // Draw the guide letter faintly
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.font = `${rect.height * 0.7 * window.devicePixelRatio}px -apple-system, sans-serif`;
+    ctx.fillStyle = 'rgba(124, 58, 237, 0.15)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(currentPracticeLetter, canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+    
+    // Draw baseline
+    const baseY = rect.height * 0.72;
+    ctx.beginPath();
+    ctx.moveTo(20, baseY * window.devicePixelRatio);
+    ctx.lineTo((rect.width - 20) * window.devicePixelRatio, baseY * window.devicePixelRatio);
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function nextPracticeLetter() {
+    practiceCount++;
+    document.getElementById('practice-count').textContent = `✅ Practised ${practiceCount} time${practiceCount > 1 ? 's' : ''}`;
+    
+    // Track as practised
+    practisedLetters[currentPracticeLetter] = (practisedLetters[currentPracticeLetter] || 0) + 1;
+    localStorage.setItem('practised-letters', JSON.stringify(practisedLetters));
+    
+    // Encouragement
+    if (practiceCount === 3) fireConfetti();
+    if (practiceCount === 5) {
+      document.getElementById('practice-guide').textContent = '🌟 Five times! You\'re getting really good!';
+      fireConfetti();
+    }
+    
+    showGuide();
   }
 
   // --- Confetti ---
@@ -537,7 +900,6 @@
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       let alive = false;
-      
       particles.forEach(p => {
         if (p.life <= 0) return;
         alive = true;
@@ -546,7 +908,6 @@
         p.vy += 0.3;
         p.rotation += p.rotSpeed;
         p.life -= 0.015;
-        
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rotation * Math.PI / 180);
@@ -555,14 +916,13 @@
         ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
         ctx.restore();
       });
-      
       if (alive) requestAnimationFrame(animate);
       else ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     animate();
   }
 
-  // --- Voices ready ---
+  // --- Voices ---
   if ('speechSynthesis' in window) {
     speechSynthesis.onvoiceschanged = () => {};
     speechSynthesis.getVoices();
