@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Spelling Star ⭐</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --bg: #1a1a2e;
+    --card: #16213e;
+    --accent: #e94560;
+    --success: #4ecca3;
+    --text: #eee;
+    --gold: #ffd700;
+  }
+  
+  body {
+    font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  .screen { display: none; width: 100%; max-width: 500px; padding: 20px; flex-direction: column; align-items: center; }
+  .screen.active { display: flex; }
+
+  h1 { font-size: 2rem; margin: 20px 0; text-align: center; }
+  h2 { font-size: 1.4rem; margin: 10px 0; text-align: center; color: #aaa; }
+
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 18px 36px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin: 10px;
+    transition: transform 0.1s, opacity 0.2s;
+    min-width: 200px;
+    text-align: center;
+  }
+  .btn:active { transform: scale(0.95); }
+  .btn.success { background: var(--success); }
+  .btn.gold { background: var(--gold); color: #333; }
+  .btn.secondary { background: #333; color: #ccc; font-size: 1rem; padding: 12px 24px; min-width: auto; }
+
+  /* Parent setup screen */
+  #parent-screen textarea {
+    width: 100%;
+    min-height: 200px;
+    background: var(--card);
+    color: var(--text);
+    border: 2px solid #333;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 1.1rem;
+    font-family: inherit;
+    resize: vertical;
+    margin: 10px 0;
+  }
+  #parent-screen textarea:focus { border-color: var(--accent); outline: none; }
+  .hint { color: #888; font-size: 0.9rem; margin: 5px 0; text-align: center; }
+
+  /* Game screen */
+  .word-num { font-size: 1rem; color: #666; margin-bottom: 5px; }
+  
+  .hear-btn {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    font-size: 3rem;
+    cursor: pointer;
+    margin: 20px 0;
+    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hear-btn:active { transform: scale(0.9); }
+
+  .input-area {
+    width: 100%;
+    margin: 20px 0;
+  }
+  
+  #spell-input {
+    width: 100%;
+    padding: 20px;
+    font-size: 2rem;
+    text-align: center;
+    background: var(--card);
+    color: var(--text);
+    border: 3px solid #333;
+    border-radius: 16px;
+    font-family: inherit;
+    letter-spacing: 4px;
+    text-transform: lowercase;
+  }
+  #spell-input:focus { border-color: var(--accent); outline: none; }
+  #spell-input.correct { border-color: var(--success); background: #1a3a2a; }
+  #spell-input.wrong { border-color: var(--accent); background: #3a1a1a; }
+
+  .feedback {
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 10px 0;
+  }
+  .feedback .correct-word {
+    font-size: 1.1rem;
+    color: #aaa;
+    margin-top: 8px;
+    letter-spacing: 2px;
+  }
+
+  /* Stars display */
+  .stars {
+    font-size: 2rem;
+    margin: 10px 0;
+    min-height: 40px;
+  }
+
+  /* Results screen */
+  .result-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 30px;
+    width: 100%;
+    text-align: center;
+    margin: 20px 0;
+  }
+  .big-score {
+    font-size: 4rem;
+    font-weight: 900;
+    color: var(--gold);
+  }
+  .result-list {
+    list-style: none;
+    width: 100%;
+    margin: 20px 0;
+  }
+  .result-list li {
+    padding: 12px 16px;
+    background: var(--card);
+    border-radius: 10px;
+    margin: 6px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+  }
+  .result-list li.got-it { border-left: 4px solid var(--success); }
+  .result-list li.missed { border-left: 4px solid var(--accent); }
+
+  /* Confetti canvas */
+  #confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+
+  /* Streak flame */
+  .streak { font-size: 1rem; color: var(--gold); min-height: 24px; }
+
+  /* Attempts display */
+  .attempts { display: flex; gap: 8px; margin: 10px 0; }
+  .attempt-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #333; border: 2px solid #555;
+  }
+  .attempt-dot.used { background: var(--accent); border-color: var(--accent); }
+  .attempt-dot.correct { background: var(--success); border-color: var(--success); }
+</style>
+</head>
+<body>
+
+<canvas id="confetti"></canvas>
+
+<!-- MENU SCREEN -->
+<div id="menu-screen" class="screen active">
+  <h1>⭐ Spelling Star</h1>
+  <h2>Ready to practise?</h2>
+  <div id="current-words-info" style="margin: 20px 0; color: #aaa;"></div>
+  <button class="btn" id="play-btn" onclick="startGame()">▶️ Play!</button>
+  <button class="btn secondary" onclick="showScreen('parent-screen')">📝 Set Words</button>
+  <div id="best-score" style="margin-top: 30px; color: var(--gold);"></div>
+</div>
+
+<!-- PARENT SETUP SCREEN -->
+<div id="parent-screen" class="screen">
+  <h1>📝 Spelling Words</h1>
+  <h2>One word per line</h2>
+  <textarea id="words-input" placeholder="cat&#10;dog&#10;the&#10;said&#10;have"></textarea>
+  <p class="hint">Paste or type the words from the spelling test</p>
+  <button class="btn success" onclick="saveWords()">✅ Save Words</button>
+  <button class="btn secondary" onclick="showScreen('menu-screen')">← Back</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="screen">
+  <div class="word-num" id="word-progress"></div>
+  <div class="stars" id="stars-display"></div>
+  <div class="streak" id="streak-display"></div>
+  
+  <button class="hear-btn" id="hear-btn" onclick="sayWord()">🔊</button>
+  <p class="hint">Tap to hear the word</p>
+  
+  <div class="input-area">
+    <input type="text" id="spell-input" autocomplete="off" autocapitalize="none" spellcheck="false" autocorrect="off">
+  </div>
+
+  <div class="attempts" id="attempts-display"></div>
+  
+  <div class="feedback" id="feedback"></div>
+  
+  <button class="btn" id="check-btn" onclick="checkSpelling()">Check ✓</button>
+  <button class="btn success" id="next-btn" onclick="nextWord()" style="display:none;">Next →</button>
+</div>
+
+<!-- RESULTS SCREEN -->
+<div id="results-screen" class="screen">
+  <h1>🏆 Results!</h1>
+  <div class="result-card">
+    <div class="big-score" id="final-score"></div>
+    <p id="final-message" style="margin-top: 10px; font-size: 1.2rem;"></p>
+  </div>
+  <ul class="result-list" id="result-list"></ul>
+  <button class="btn gold" onclick="startGame()">🔁 Try Again</button>
+  <button class="btn secondary" onclick="showScreen('menu-screen')">← Home</button>
+</div>
+
+<script>
+  // --- State ---
+  let words = [];
+  let currentIndex = 0;
+  let results = []; // { word, attempts, gotIt }
+  let streak = 0;
+  let maxAttempts = 3;
+  let attemptsUsed = 0;
+  let answered = false;
+
+  // --- Init ---
+  function init() {
+    const saved = localStorage.getItem('spelling-words');
+    if (saved) {
+      words = JSON.parse(saved);
+      updateWordsInfo();
+    }
+    updateBestScore();
+    
+    document.getElementById('spell-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        if (answered) nextWord();
+        else checkSpelling();
+      }
+    });
+  }
+
+  // --- Screen management ---
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    
+    if (id === 'parent-screen') {
+      document.getElementById('words-input').value = words.join('\n');
+    }
+    if (id === 'menu-screen') {
+      updateWordsInfo();
+      updateBestScore();
+    }
+  }
+
+  // --- Parent: save words ---
+  function saveWords() {
+    const raw = document.getElementById('words-input').value;
+    words = raw.split('\n').map(w => w.trim().toLowerCase()).filter(w => w.length > 0);
+    
+    if (words.length === 0) {
+      alert('Add at least one word!');
+      return;
+    }
+    
+    localStorage.setItem('spelling-words', JSON.stringify(words));
+    showScreen('menu-screen');
+  }
+
+  function updateWordsInfo() {
+    const el = document.getElementById('current-words-info');
+    const playBtn = document.getElementById('play-btn');
+    if (words.length > 0) {
+      el.textContent = `${words.length} word${words.length > 1 ? 's' : ''} loaded`;
+      playBtn.style.opacity = '1';
+      playBtn.disabled = false;
+    } else {
+      el.textContent = 'No words yet — tap Set Words to add some!';
+      playBtn.style.opacity = '0.4';
+      playBtn.disabled = true;
+    }
+  }
+
+  function updateBestScore() {
+    const best = localStorage.getItem('spelling-best');
+    const el = document.getElementById('best-score');
+    if (best && words.length > 0) {
+      el.textContent = `⭐ Best: ${best}/${words.length}`;
+    } else {
+      el.textContent = '';
+    }
+  }
+
+  // --- Game ---
+  function startGame() {
+    if (words.length === 0) {
+      showScreen('parent-screen');
+      return;
+    }
+    currentIndex = 0;
+    results = [];
+    streak = 0;
+    showScreen('game-screen');
+    loadWord();
+  }
+
+  function loadWord() {
+    answered = false;
+    attemptsUsed = 0;
+    const input = document.getElementById('spell-input');
+    input.value = '';
+    input.className = '';
+    input.disabled = false;
+    input.focus();
+    
+    document.getElementById('check-btn').style.display = '';
+    document.getElementById('next-btn').style.display = 'none';
+    document.getElementById('feedback').innerHTML = '';
+    document.getElementById('word-progress').textContent = `Word ${currentIndex + 1} of ${words.length}`;
+    document.getElementById('stars-display').textContent = '⭐'.repeat(results.filter(r => r.gotIt).length);
+    document.getElementById('streak-display').textContent = streak >= 2 ? `🔥 ${streak} in a row!` : '';
+    
+    updateAttemptDots();
+    
+    // Auto-say the word
+    setTimeout(() => sayWord(), 400);
+  }
+
+  function updateAttemptDots() {
+    const el = document.getElementById('attempts-display');
+    let html = '';
+    for (let i = 0; i < maxAttempts; i++) {
+      let cls = 'attempt-dot';
+      if (i < attemptsUsed) cls += ' used';
+      html += `<div class="${cls}"></div>`;
+    }
+    el.innerHTML = html;
+  }
+
+  function sayWord() {
+    const word = words[currentIndex];
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(word);
+      utter.lang = 'en-GB';
+      utter.rate = 0.8;
+      utter.pitch = 1.0;
+      
+      // Try to pick a UK English voice
+      const voices = window.speechSynthesis.getVoices();
+      const ukVoice = voices.find(v => v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en'));
+      if (ukVoice) utter.voice = ukVoice;
+      
+      window.speechSynthesis.speak(utter);
+    }
+    
+    // Animate button
+    const btn = document.getElementById('hear-btn');
+    btn.style.transform = 'scale(1.1)';
+    setTimeout(() => btn.style.transform = '', 200);
+  }
+
+  function checkSpelling() {
+    if (answered) return;
+    
+    const input = document.getElementById('spell-input');
+    const guess = input.value.trim().toLowerCase();
+    const correct = words[currentIndex];
+    
+    if (!guess) {
+      input.style.transform = 'translateX(-10px)';
+      setTimeout(() => input.style.transform = '', 100);
+      return;
+    }
+
+    if (guess === correct) {
+      // Correct!
+      answered = true;
+      input.className = 'correct';
+      input.disabled = true;
+      streak++;
+      
+      // Mark attempt dots
+      const dots = document.querySelectorAll('.attempt-dot');
+      dots.forEach((d, i) => { if (i <= attemptsUsed) d.className = 'attempt-dot correct'; });
+      
+      const messages = ['Amazing! 🎉', 'Brilliant! ⭐', 'You got it! 💪', 'Super star! 🌟', 'Nailed it! 🎯', 'Fantastic! 🚀'];
+      document.getElementById('feedback').innerHTML = messages[Math.floor(Math.random() * messages.length)];
+      
+      results.push({ word: correct, attempts: attemptsUsed + 1, gotIt: true });
+      
+      document.getElementById('check-btn').style.display = 'none';
+      document.getElementById('next-btn').style.display = '';
+      document.getElementById('stars-display').textContent = '⭐'.repeat(results.filter(r => r.gotIt).length);
+      document.getElementById('streak-display').textContent = streak >= 2 ? `🔥 ${streak} in a row!` : '';
+      
+      if (attemptsUsed === 0) fireConfetti();
+      
+    } else {
+      // Wrong
+      attemptsUsed++;
+      updateAttemptDots();
+      input.className = 'wrong';
+      setTimeout(() => input.className = '', 500);
+      
+      if (attemptsUsed >= maxAttempts) {
+        // Out of attempts
+        answered = true;
+        input.disabled = true;
+        streak = 0;
+        
+        document.getElementById('feedback').innerHTML = 
+          `Not quite 😊<span class="correct-word">It was: <strong>${correct}</strong></span>`;
+        document.getElementById('streak-display').textContent = '';
+        
+        results.push({ word: correct, attempts: attemptsUsed, gotIt: false });
+        
+        document.getElementById('check-btn').style.display = 'none';
+        document.getElementById('next-btn').style.display = '';
+        
+        // Say the correct word slowly
+        setTimeout(() => {
+          if ('speechSynthesis' in window) {
+            const utter = new SpeechSynthesisUtterance(correct);
+            utter.lang = 'en-GB';
+            utter.rate = 0.6;
+            window.speechSynthesis.speak(utter);
+          }
+        }, 500);
+        
+      } else {
+        // Still has attempts
+        const hints = [];
+        if (attemptsUsed === 1) hints.push(`Hint: it has ${correct.length} letters`);
+        if (attemptsUsed === 2) hints.push(`Hint: it starts with "${correct[0]}"`);
+        document.getElementById('feedback').innerHTML = `Try again! ${hints[0] || ''}`;
+        input.value = '';
+        input.focus();
+      }
+    }
+  }
+
+  function nextWord() {
+    currentIndex++;
+    if (currentIndex >= words.length) {
+      showResults();
+    } else {
+      loadWord();
+    }
+  }
+
+  // --- Results ---
+  function showResults() {
+    showScreen('results-screen');
+    
+    const correct = results.filter(r => r.gotIt).length;
+    const total = results.length;
+    const pct = Math.round((correct / total) * 100);
+    
+    document.getElementById('final-score').textContent = `${correct}/${total}`;
+    
+    let msg = '';
+    if (pct === 100) msg = 'PERFECT! You\'re a Spelling Star! 🌟';
+    else if (pct >= 80) msg = 'Amazing work! So close to perfect! 🎉';
+    else if (pct >= 60) msg = 'Great effort! Keep practising! 💪';
+    else if (pct >= 40) msg = 'Good try! You\'re getting better! 📈';
+    else msg = 'Keep going! Practice makes perfect! 🌱';
+    
+    document.getElementById('final-message').textContent = msg;
+    
+    const list = document.getElementById('result-list');
+    list.innerHTML = results.map(r => `
+      <li class="${r.gotIt ? 'got-it' : 'missed'}">
+        <span>${r.word}</span>
+        <span>${r.gotIt ? (r.attempts === 1 ? '⭐' : `✅ (${r.attempts} tries)`) : '❌'}</span>
+      </li>
+    `).join('');
+    
+    // Save best score
+    const prev = parseInt(localStorage.getItem('spelling-best') || '0');
+    if (correct > prev) localStorage.setItem('spelling-best', correct.toString());
+    
+    if (pct === 100) fireConfetti();
+  }
+
+  // --- Confetti ---
+  function fireConfetti() {
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    const particles = [];
+    const colors = ['#ffd700', '#e94560', '#4ecca3', '#00d2ff', '#ff6b6b', '#feca57'];
+    
+    for (let i = 0; i < 80; i++) {
+      particles.push({
+        x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+        y: canvas.height / 2,
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() - 1) * 15 - 5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: Math.random() * 8 + 4,
+        rotation: Math.random() * 360,
+        rotSpeed: (Math.random() - 0.5) * 10,
+        life: 1
+      });
+    }
+    
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      
+      particles.forEach(p => {
+        if (p.life <= 0) return;
+        alive = true;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.3;
+        p.rotation += p.rotSpeed;
+        p.life -= 0.015;
+        
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation * Math.PI / 180);
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      });
+      
+      if (alive) requestAnimationFrame(animate);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    animate();
+  }
+
+  // --- Voices ready ---
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = () => {};
+    speechSynthesis.getVoices();
+  }
+
+  init();
+</script>
+</body>
+</html>
