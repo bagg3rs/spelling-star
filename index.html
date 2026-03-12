@@ -879,49 +879,134 @@
     }, 50);
   }
 
+  // Letter sizing: use a consistent size that a finger can trace comfortably
+  // Letters sit on the baseline with ascenders going up and descenders going down
+  const letterMeta = {
+    // descenders: letters that go below the baseline
+    descenders: 'gjpqy',
+    // ascenders: letters that reach the top line
+    ascenders: 'bdfhklt',
+    // tall: uppercase-height letters
+    tall: 'bdfghijklpqty',
+  };
+
+  function getLetterLayout(rect, dpr) {
+    // Writing lines: top, middle (x-height), baseline, descender
+    const margin = 30;
+    const topY = rect.height * 0.15;
+    const midY = rect.height * 0.40;
+    const baseY = rect.height * 0.65;
+    const descY = rect.height * 0.85;
+    
+    // Font size based on x-height zone (mid to base) — make letter fill that zone
+    const isDescender = letterMeta.descenders.includes(currentPracticeLetter);
+    const isAscender = letterMeta.ascenders.includes(currentPracticeLetter);
+    
+    // Size the letter to fit between the appropriate lines
+    let fontSize;
+    if (isDescender) {
+      fontSize = (descY - midY) * 1.6; // needs room below baseline
+    } else if (isAscender) {
+      fontSize = (baseY - topY) * 1.2;
+    } else {
+      fontSize = (baseY - midY) * 2.0; // lowercase sits in x-height
+    }
+    
+    // Center X, and vertically position so letter sits on baseline
+    const centerX = rect.width / 2;
+    
+    return { topY, midY, baseY, descY, fontSize, centerX, margin };
+  }
+
+  function drawWritingLines(ctx, canvas, rect, dpr) {
+    const layout = getLetterLayout(rect, dpr);
+    const pad = 20;
+    
+    ctx.save();
+    ctx.setLineDash([8, 6]);
+    ctx.lineWidth = 1;
+    
+    // Top line (ascender) — light
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath();
+    ctx.moveTo(pad * dpr, layout.topY * dpr);
+    ctx.lineTo((rect.width - pad) * dpr, layout.topY * dpr);
+    ctx.stroke();
+    
+    // Middle line (x-height) — dashed, more visible
+    ctx.strokeStyle = 'rgba(124, 58, 237, 0.25)';
+    ctx.beginPath();
+    ctx.moveTo(pad * dpr, layout.midY * dpr);
+    ctx.lineTo((rect.width - pad) * dpr, layout.midY * dpr);
+    ctx.stroke();
+    
+    // Baseline — solid, most visible
+    ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(124, 58, 237, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pad * dpr, layout.baseY * dpr);
+    ctx.lineTo((rect.width - pad) * dpr, layout.baseY * dpr);
+    ctx.stroke();
+    
+    // Descender line — only if relevant
+    if (letterMeta.descenders.includes(currentPracticeLetter)) {
+      ctx.setLineDash([8, 6]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad * dpr, layout.descY * dpr);
+      ctx.lineTo((rect.width - pad) * dpr, layout.descY * dpr);
+      ctx.stroke();
+    }
+    
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
   function showGuide() {
     const canvas = document.getElementById('practice-canvas');
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio;
     
-    // Draw the guide letter faintly
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGuideLetter(ctx, canvas, rect, 0.15);
-    drawBaseline(ctx, canvas, rect);
+    drawWritingLines(ctx, canvas, rect, dpr);
+    drawGuideLetter(ctx, canvas, rect, 0.25); // more visible guide
     
-    // Clear score display
     document.getElementById('score-display').innerHTML = '';
   }
 
   function drawGuideLetter(ctx, canvas, rect, alpha) {
+    const dpr = window.devicePixelRatio;
+    const layout = getLetterLayout(rect, dpr);
+    
     ctx.save();
-    ctx.font = `${rect.height * 0.7 * window.devicePixelRatio}px -apple-system, sans-serif`;
+    ctx.font = `${layout.fontSize * dpr}px -apple-system, sans-serif`;
     ctx.fillStyle = `rgba(124, 58, 237, ${alpha})`;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(currentPracticeLetter, canvas.width / 2, canvas.height / 2);
+    ctx.textBaseline = 'alphabetic'; // sits ON the baseline
+    ctx.fillText(currentPracticeLetter, layout.centerX * dpr, layout.baseY * dpr);
+    
+    // Also draw a dotted outline for extra guidance
+    if (alpha >= 0.2) {
+      ctx.strokeStyle = `rgba(124, 58, 237, ${alpha + 0.15})`;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeText(currentPracticeLetter, layout.centerX * dpr, layout.baseY * dpr);
+      ctx.setLineDash([]);
+    }
     ctx.restore();
-  }
-
-  function drawBaseline(ctx, canvas, rect) {
-    const baseY = rect.height * 0.72;
-    ctx.beginPath();
-    ctx.moveTo(20, baseY * window.devicePixelRatio);
-    ctx.lineTo((rect.width - 20) * window.devicePixelRatio, baseY * window.devicePixelRatio);
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
-    ctx.stroke();
-    ctx.setLineDash([]);
   }
 
   function clearPracticeCanvas() {
     const canvas = document.getElementById('practice-canvas');
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGuideLetter(ctx, canvas, rect, 0.15);
-    drawBaseline(ctx, canvas, rect);
+    drawWritingLines(ctx, canvas, rect, dpr);
+    drawGuideLetter(ctx, canvas, rect, 0.25);
     document.getElementById('score-display').innerHTML = '';
   }
 
@@ -931,6 +1016,7 @@
     const refCanvas = document.getElementById('reference-canvas');
     const rect = userCanvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio;
+    const layout = getLetterLayout(rect, dpr);
     
     // Setup reference canvas at same size
     refCanvas.width = userCanvas.width;
@@ -938,23 +1024,22 @@
     const refCtx = refCanvas.getContext('2d');
     refCtx.scale(dpr, dpr);
     
-    // Draw the reference letter with a generous stroke for tolerance
+    // Draw the reference letter with generous tolerance zone
     refCtx.clearRect(0, 0, refCanvas.width, refCanvas.height);
     refCtx.save();
-    const fontSize = rect.height * 0.7 * dpr;
-    refCtx.font = `${fontSize}px -apple-system, sans-serif`;
+    refCtx.font = `${layout.fontSize * dpr}px -apple-system, sans-serif`;
     refCtx.textAlign = 'center';
-    refCtx.textBaseline = 'middle';
+    refCtx.textBaseline = 'alphabetic';
     
     // Fill the letter
     refCtx.fillStyle = 'white';
-    refCtx.fillText(currentPracticeLetter, refCanvas.width / (2 * dpr), refCanvas.height / (2 * dpr));
+    refCtx.fillText(currentPracticeLetter, layout.centerX * dpr, layout.baseY * dpr);
     
-    // Also stroke it with a wide line for tolerance zone (finger is imprecise)
+    // Stroke with wide line for tolerance (finger is imprecise)
     refCtx.strokeStyle = 'white';
-    refCtx.lineWidth = 20; // generous tolerance
+    refCtx.lineWidth = 25; // generous tolerance for a 6-year-old
     refCtx.lineJoin = 'round';
-    refCtx.strokeText(currentPracticeLetter, refCanvas.width / (2 * dpr), refCanvas.height / (2 * dpr));
+    refCtx.strokeText(currentPracticeLetter, layout.centerX * dpr, layout.baseY * dpr);
     refCtx.restore();
     
     // Get pixel data
