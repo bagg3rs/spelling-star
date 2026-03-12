@@ -430,6 +430,7 @@
   <div class="canvas-tools">
     <button onclick="clearPracticeCanvas()">🗑️ Clear</button>
     <button onclick="showGuide()">👁️ Show Guide</button>
+    <button onclick="playStrokeAnimation()" id="watch-btn">▶️ Watch</button>
     <button class="btn success" style="padding:10px 20px; margin:0; min-width:auto; font-size:1rem;" onclick="scoreDrawing()">✅ Check!</button>
     <button onclick="nextPracticeLetter()">Next →</button>
   </div>
@@ -882,13 +883,45 @@
   // Letter sizing: use a consistent size that a finger can trace comfortably
   // Letters sit on the baseline with ascenders going up and descenders going down
   const letterMeta = {
-    // descenders: letters that go below the baseline
     descenders: 'gjpqy',
-    // ascenders: letters that reach the top line
     ascenders: 'bdfhklt',
-    // tall: uppercase-height letters
     tall: 'bdfghijklpqty',
   };
+
+  // Stroke paths for letter formation animation
+  // Coordinates are normalized: x [0-1] across letter width, y [0-1] from x-height to baseline
+  // y < 0 = above x-height (ascenders), y > 1 = below baseline (descenders)
+  // Each letter has array of strokes, each stroke is array of [x, y] points
+  const letterPaths = {
+    a: [[[0.7, 0.1], [0.8, 0.4], [0.7, 0.85], [0.4, 0.95], [0.15, 0.75], [0.15, 0.35], [0.3, 0.05], [0.6, 0.05], [0.75, 0.15], [0.75, 0.4], [0.75, 0.7], [0.75, 1.0]]],
+    b: [[[0.25, -0.8], [0.25, -0.4], [0.25, 0.0], [0.25, 0.3], [0.25, 0.6], [0.25, 1.0], [0.25, 0.6], [0.4, 0.05], [0.65, 0.05], [0.8, 0.25], [0.8, 0.5], [0.8, 0.75], [0.65, 0.95], [0.4, 0.95], [0.25, 0.75]]],
+    c: [[[0.75, 0.15], [0.55, 0.0], [0.3, 0.05], [0.15, 0.25], [0.1, 0.5], [0.15, 0.75], [0.3, 0.95], [0.55, 1.0], [0.75, 0.85]]],
+    d: [[[0.7, 0.1], [0.5, 0.0], [0.3, 0.05], [0.15, 0.25], [0.1, 0.5], [0.15, 0.75], [0.3, 0.95], [0.55, 0.95], [0.7, 0.75], [0.7, 0.5], [0.7, 0.1], [0.7, -0.3], [0.7, -0.6], [0.7, -0.8]]],
+    e: [[[0.15, 0.5], [0.4, 0.5], [0.75, 0.5], [0.8, 0.3], [0.65, 0.05], [0.35, 0.0], [0.15, 0.2], [0.1, 0.5], [0.15, 0.8], [0.35, 1.0], [0.6, 0.95], [0.75, 0.85]]],
+    f: [[[0.65, -0.7], [0.5, -0.85], [0.35, -0.7], [0.3, -0.4], [0.3, 0.0], [0.3, 0.4], [0.3, 0.7], [0.3, 1.0]], [[0.1, 0.0], [0.3, 0.0], [0.55, 0.0]]],
+    g: [[[0.7, 0.1], [0.55, 0.0], [0.35, 0.0], [0.15, 0.15], [0.1, 0.4], [0.1, 0.6], [0.2, 0.85], [0.4, 0.95], [0.6, 0.95], [0.75, 0.8], [0.75, 0.5], [0.75, 0.2], [0.7, 0.1], [0.75, 0.3], [0.75, 0.6], [0.75, 1.0], [0.75, 1.2], [0.7, 1.45], [0.5, 1.55], [0.3, 1.5], [0.2, 1.35]]],
+    h: [[[0.2, -0.8], [0.2, -0.4], [0.2, 0.0], [0.2, 0.4], [0.2, 0.7], [0.2, 1.0], [0.2, 0.5], [0.2, 0.2], [0.35, 0.0], [0.55, 0.0], [0.7, 0.15], [0.75, 0.4], [0.75, 0.7], [0.75, 1.0]]],
+    i: [[[0.5, 0.0], [0.5, 0.3], [0.5, 0.6], [0.5, 1.0]], [[0.5, -0.25]]],
+    j: [[[0.55, 0.0], [0.55, 0.3], [0.55, 0.6], [0.55, 1.0], [0.55, 1.25], [0.45, 1.45], [0.3, 1.5], [0.2, 1.4]], [[0.55, -0.25]]],
+    k: [[[0.2, -0.8], [0.2, -0.4], [0.2, 0.0], [0.2, 0.4], [0.2, 0.7], [0.2, 1.0]], [[0.7, 0.0], [0.5, 0.3], [0.3, 0.5], [0.2, 0.55], [0.35, 0.7], [0.55, 0.85], [0.75, 1.0]]],
+    l: [[[0.5, -0.8], [0.5, -0.4], [0.5, 0.0], [0.5, 0.4], [0.5, 0.7], [0.5, 1.0]]],
+    m: [[[0.1, 1.0], [0.1, 0.6], [0.1, 0.2], [0.1, 0.0], [0.2, 0.0], [0.3, 0.0], [0.4, 0.15], [0.4, 0.5], [0.4, 1.0], [0.4, 0.5], [0.4, 0.15], [0.5, 0.0], [0.65, 0.0], [0.8, 0.15], [0.8, 0.5], [0.8, 1.0]]],
+    n: [[[0.2, 1.0], [0.2, 0.6], [0.2, 0.2], [0.2, 0.0], [0.35, 0.0], [0.55, 0.0], [0.7, 0.15], [0.75, 0.4], [0.75, 0.7], [0.75, 1.0]]],
+    o: [[[0.7, 0.1], [0.5, 0.0], [0.3, 0.0], [0.12, 0.2], [0.08, 0.5], [0.12, 0.8], [0.3, 1.0], [0.5, 1.0], [0.7, 0.8], [0.78, 0.5], [0.7, 0.2], [0.7, 0.1]]],
+    p: [[[0.25, 0.0], [0.25, 0.3], [0.25, 0.6], [0.25, 1.0], [0.25, 1.3], [0.25, 1.5], [0.25, 0.6], [0.4, 0.05], [0.65, 0.05], [0.8, 0.25], [0.8, 0.5], [0.8, 0.75], [0.65, 0.95], [0.4, 0.95], [0.25, 0.75]]],
+    q: [[[0.7, 0.1], [0.5, 0.0], [0.3, 0.05], [0.15, 0.25], [0.1, 0.5], [0.15, 0.75], [0.3, 0.95], [0.55, 0.95], [0.7, 0.75], [0.7, 0.5], [0.7, 0.15], [0.7, 0.4], [0.7, 0.8], [0.7, 1.2], [0.7, 1.5], [0.8, 1.55]]],
+    r: [[[0.25, 1.0], [0.25, 0.6], [0.25, 0.2], [0.25, 0.0], [0.35, 0.0], [0.5, 0.0], [0.65, 0.1], [0.7, 0.25]]],
+    s: [[[0.7, 0.15], [0.55, 0.0], [0.35, 0.0], [0.15, 0.1], [0.12, 0.25], [0.2, 0.45], [0.5, 0.55], [0.75, 0.65], [0.8, 0.8], [0.7, 0.95], [0.5, 1.0], [0.3, 0.95], [0.15, 0.85]]],
+    t: [[[0.4, -0.5], [0.4, -0.2], [0.4, 0.0], [0.4, 0.3], [0.4, 0.6], [0.4, 0.85], [0.5, 1.0], [0.65, 1.0]], [[0.15, 0.0], [0.4, 0.0], [0.65, 0.0]]],
+    u: [[[0.2, 0.0], [0.2, 0.3], [0.2, 0.6], [0.25, 0.85], [0.4, 1.0], [0.6, 1.0], [0.75, 0.85], [0.75, 0.6], [0.75, 0.3], [0.75, 0.0], [0.75, 0.3], [0.75, 0.6], [0.75, 1.0]]],
+    v: [[[0.1, 0.0], [0.25, 0.35], [0.4, 0.7], [0.5, 1.0], [0.6, 0.7], [0.75, 0.35], [0.9, 0.0]]],
+    w: [[[0.05, 0.0], [0.15, 0.5], [0.25, 1.0], [0.35, 0.5], [0.5, 0.0], [0.6, 0.5], [0.75, 1.0], [0.85, 0.5], [0.95, 0.0]]],
+    x: [[[0.15, 0.0], [0.35, 0.35], [0.5, 0.5], [0.65, 0.65], [0.85, 1.0]], [[0.85, 0.0], [0.65, 0.35], [0.5, 0.5], [0.35, 0.65], [0.15, 1.0]]],
+    y: [[[0.15, 0.0], [0.3, 0.3], [0.45, 0.55]], [[0.85, 0.0], [0.7, 0.3], [0.5, 0.55], [0.45, 0.7], [0.4, 1.0], [0.35, 1.25], [0.25, 1.45], [0.15, 1.5]]],
+    z: [[[0.15, 0.0], [0.45, 0.0], [0.8, 0.0], [0.5, 0.5], [0.2, 1.0], [0.5, 1.0], [0.85, 1.0]]],
+  };
+
+  let animationRunning = false;
 
   function getLetterLayout(rect, dpr) {
     // Writing lines: top, middle (x-height), baseline, descender
@@ -972,9 +1005,155 @@
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawWritingLines(ctx, canvas, rect, dpr);
-    drawGuideLetter(ctx, canvas, rect, 0.35); // clearly visible guide
+    drawGuideLetter(ctx, canvas, rect, 0.35);
+    drawStartFinishDots(ctx, rect);
     
     document.getElementById('score-display').innerHTML = '';
+  }
+
+  // Convert normalized path coords to canvas CSS pixel coords
+  function pathToCanvas(points, rect) {
+    const layout = getLetterLayout(rect, window.devicePixelRatio);
+    const xHeight = layout.baseY - layout.midY; // height of lowercase body
+    const letterWidth = xHeight * 1.0; // roughly square proportions
+    const originX = layout.centerX - letterWidth / 2;
+    const originY = layout.midY;
+    
+    return points.map(([px, py]) => ({
+      x: originX + px * letterWidth,
+      y: originY + py * xHeight
+    }));
+  }
+
+  function drawStartFinishDots(ctx, rect) {
+    const paths = letterPaths[currentPracticeLetter];
+    if (!paths || paths.length === 0) return;
+    
+    const firstStroke = pathToCanvas(paths[0], rect);
+    const lastStroke = pathToCanvas(paths[paths.length - 1], rect);
+    const start = firstStroke[0];
+    const end = lastStroke[lastStroke.length - 1];
+    
+    // Start dot — green with "S"
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(start.x, start.y, 12, 0, Math.PI * 2);
+    ctx.fillStyle = '#4ecca3';
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('S', start.x, start.y);
+    
+    // End dot — red with "F"
+    ctx.beginPath();
+    ctx.arc(end.x, end.y, 12, 0, Math.PI * 2);
+    ctx.fillStyle = '#e94560';
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.fillText('F', end.x, end.y);
+    ctx.restore();
+  }
+
+  function playStrokeAnimation() {
+    if (animationRunning) return;
+    const paths = letterPaths[currentPracticeLetter];
+    if (!paths) return;
+    
+    animationRunning = true;
+    document.getElementById('watch-btn').textContent = '⏳ ...';
+    
+    const canvas = document.getElementById('practice-canvas');
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio;
+    
+    // Clear and redraw guide
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawWritingLines(ctx, canvas, rect, dpr);
+    drawGuideLetter(ctx, canvas, rect, 0.2); // dimmer during animation
+    
+    // Flatten all strokes into segments with pen-up markers
+    const segments = [];
+    paths.forEach((stroke, si) => {
+      const canvasPoints = pathToCanvas(stroke, rect);
+      canvasPoints.forEach((pt, pi) => {
+        segments.push({ ...pt, penUp: pi === 0 && si > 0 });
+      });
+    });
+    
+    let currentSeg = 0;
+    let progress = 0;
+    const speed = 0.04; // fraction per frame — slower = clearer
+    
+    function animate() {
+      if (currentSeg >= segments.length - 1) {
+        // Done — redraw start/finish dots on top
+        drawStartFinishDots(ctx, rect);
+        animationRunning = false;
+        document.getElementById('watch-btn').textContent = '▶️ Watch';
+        return;
+      }
+      
+      const from = segments[currentSeg];
+      const to = segments[currentSeg + 1];
+      
+      progress += speed;
+      
+      if (progress >= 1) {
+        progress = 0;
+        currentSeg++;
+        requestAnimationFrame(animate);
+        return;
+      }
+      
+      // Interpolate position
+      const x = from.x + (to.x - from.x) * progress;
+      const y = from.y + (to.y - from.y) * progress;
+      
+      if (!to.penUp) {
+        // Draw the trail
+        ctx.beginPath();
+        const prevProgress = Math.max(0, progress - speed);
+        const prevX = from.x + (to.x - from.x) * prevProgress;
+        const prevY = from.y + (to.y - from.y) * prevProgress;
+        ctx.moveTo(prevX, prevY);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+      
+      // Draw the animated pen dot
+      // First clear the previous dot area by redrawing a small section
+      ctx.beginPath();
+      ctx.arc(x, y, 10, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffd700';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      
+      requestAnimationFrame(animate);
+    }
+    
+    // Draw start dot first
+    const firstPoint = segments[0];
+    ctx.beginPath();
+    ctx.arc(firstPoint.x, firstPoint.y, 12, 0, Math.PI * 2);
+    ctx.fillStyle = '#4ecca3';
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('S', firstPoint.x, firstPoint.y);
+    
+    // Small delay before starting animation
+    setTimeout(() => requestAnimationFrame(animate), 500);
   }
 
   function drawGuideLetter(ctx, canvas, rect, alpha) {
@@ -1010,6 +1189,7 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawWritingLines(ctx, canvas, rect, dpr);
     drawGuideLetter(ctx, canvas, rect, 0.35);
+    drawStartFinishDots(ctx, rect);
     document.getElementById('score-display').innerHTML = '';
   }
 
