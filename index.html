@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Spelling Star ⭐</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Hand:wght@400;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   
@@ -1186,8 +1188,8 @@
     const layout = getLetterLayout(rect, dpr);
     
     ctx.save();
-    // Note: ctx.scale(dpr) is already set, so use CSS pixel values
-    ctx.font = `${layout.fontSize}px -apple-system, sans-serif`;
+    // Use educational handwriting font (single-storey a, correct g, etc.)
+    ctx.font = `${layout.fontSize}px "Edu AU VIC WA NT Hand", cursive`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic'; // sits ON the baseline
     
@@ -1237,7 +1239,7 @@
     // Uses CSS pixel coords since ctx.scale(dpr) handles the rest
     refCtx.clearRect(0, 0, refCanvas.width, refCanvas.height);
     refCtx.save();
-    refCtx.font = `${layout.fontSize}px -apple-system, sans-serif`;
+    refCtx.font = `${layout.fontSize}px "Edu AU VIC WA NT Hand", cursive`;
     refCtx.textAlign = 'center';
     refCtx.textBaseline = 'alphabetic';
     
@@ -1306,6 +1308,11 @@
     if (userCount > 30) score = Math.max(score, 25);
     
     showScore(score, coverage, precision);
+    
+    // Auto-clear after showing score — ready for next attempt
+    setTimeout(() => {
+      clearPracticeCanvas();
+    }, 2000);
   }
 
   function showScore(score, coverage, precision) {
