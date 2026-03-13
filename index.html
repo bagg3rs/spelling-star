@@ -1061,25 +1061,24 @@
     const start = firstStroke[0];
     const end = lastStroke[lastStroke.length - 1];
     
-    // Start dot — green with "S"
     ctx.save();
+    // Start dot — small green circle with white ring
     ctx.beginPath();
-    ctx.arc(start.x, start.y, 12, 0, Math.PI * 2);
+    ctx.arc(start.x, start.y, 6, 0, Math.PI * 2);
     ctx.fillStyle = '#4ecca3';
     ctx.fill();
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 11px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('S', start.x, start.y);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
     
-    // End dot — red with "F"
+    // End dot — small red circle with white ring
     ctx.beginPath();
-    ctx.arc(end.x, end.y, 12, 0, Math.PI * 2);
+    ctx.arc(end.x, end.y, 6, 0, Math.PI * 2);
     ctx.fillStyle = '#e94560';
     ctx.fill();
-    ctx.fillStyle = 'white';
-    ctx.fillText('F', end.x, end.y);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -1170,14 +1169,12 @@
     // Draw start dot first
     const firstPoint = segments[0];
     ctx.beginPath();
-    ctx.arc(firstPoint.x, firstPoint.y, 12, 0, Math.PI * 2);
+    ctx.arc(firstPoint.x, firstPoint.y, 6, 0, Math.PI * 2);
     ctx.fillStyle = '#4ecca3';
     ctx.fill();
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 11px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('S', firstPoint.x, firstPoint.y);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
     
     // Small delay before starting animation
     setTimeout(() => requestAnimationFrame(animate), 500);
